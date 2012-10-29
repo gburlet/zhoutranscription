@@ -1960,5 +1960,13 @@ void Transcribe(int Len,int inputLen,double *SoundIn,double *out,double *outArra
 /* For standalone compilation testing */
 int main(int argc, char **argv) 
 {
+    float fs = 44100;
+    size_t numChannels = 1;
+    size_t stepSize = 441;
+    size_t blockSize = 441;
+
+    Transcription t(fs);
+    t.initialise(numChannels, stepSize, blockSize);
+
     return 0;
 }

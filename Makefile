@@ -1,14 +1,22 @@
 CC=g++
-PNAME=polytrans
+CFLAGS = -Wall
+OBJECT_PATH = Release
+OBJECTS = transcription.o realtime.o
+vpath %.o $(OBJECT_PATH)
 
-polytrans: realtime.o transcription.o 
-	$(CC) -o $(PNAME) transcription.o realtime.o
+polytrans: $(OBJECTS) 
+	$(CC) -o $@ $(OBJECT_PATH)/*.o
 
-transcription.o: transcription.h transcription.cpp plugin.h realtime.h
-	$(CC) -c transcription.cpp
+transcription.o: transcription.cpp transcription.h plugin.h realtime.h
+	$(CC) -c $(CFLAGS) $< -o $(OBJECT_PATH)/$@
 
 realtime.o: realtime.cpp realtime.h
-	$(CC) -c realtime.cpp
+	$(CC) -c $(CFLAGS) $< -o $(OBJECT_PATH)/$@
+
+$(OBJECTS): | $(OBJECT_PATH)
+
+$(OBJECT_PATH):
+	mkdir $(OBJECT_PATH)
 
 clean:
-	rm $(PNAME) *.o
+	rm -rf $(OBJECT_PATH) polytrans
