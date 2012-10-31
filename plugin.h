@@ -376,6 +376,12 @@ public:
 
         Feature() : // defaults for mandatory non-class-type members
             hasTimestamp(false), hasDuration(false) { }
+
+        bool operator==(const Feature &otherFeature) const
+        {
+            return this->timestamp == otherFeature.timestamp;
+        }
+        
     };
 
     typedef std::vector<Feature> FeatureList;

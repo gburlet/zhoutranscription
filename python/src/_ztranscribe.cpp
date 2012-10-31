@@ -3,6 +3,7 @@
 #include "plugin.h"
 #include <boost/python.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#include <boost/python/suite/indexing/map_indexing_suite.hpp>
 
 using Vamp::RealTime;
 
@@ -10,6 +11,8 @@ using namespace boost::python;
 using namespace std;
 
 typedef vector<float> fVector;
+typedef vector<Transcription::Feature> FeatureList;
+typedef map<int, FeatureList> FeatureSet;
 
 string fVec_print(fVector x) {
     stringstream res;
@@ -97,5 +100,13 @@ BOOST_PYTHON_MODULE(transcribe)
         .def_readwrite("timestamp", &Transcription::Feature::timestamp)
         .def_readwrite("duration", &Transcription::Feature::duration)
         .def_readwrite("values", &Transcription::Feature::values)
+    ;
+
+    class_<FeatureList>("FeatureList")
+        .def(vector_indexing_suite<FeatureList>())
+    ;
+
+    class_<FeatureSet>("FeatureSet")
+        .def(map_indexing_suite<FeatureSet>())
     ;
 }
