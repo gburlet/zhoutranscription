@@ -31,7 +31,7 @@ string fVec_print(fVector x) {
 template<typename T>
 struct VectorFromList {
     VectorFromList() { 
-        converter::registry::push_back(&convertible, &construct, type_id<vector<T*> >()); 
+        converter::registry::push_back(&convertible, &construct, type_id<vector<T> >()); 
     }
 
     static void* convertible(PyObject* obj_ptr){
@@ -45,11 +45,11 @@ struct VectorFromList {
 
     static void construct(PyObject* obj_ptr, converter::rvalue_from_python_stage1_data* data){
         // Get pointer to memory where the vector will be constructed
-        void* storage = ((converter::rvalue_from_python_storage<std::vector<T*> >*)(data))->storage.bytes;
+        void* storage = ((converter::rvalue_from_python_storage<std::vector<T> >*)(data))->storage.bytes;
 
         // construct the new vector in place using the python list data
-        new (storage) vector<T*>();
-        vector<T*> *v = (vector<T*>*)(storage);
+        new (storage) vector<T>();
+        vector<T> *v = (vector<T>*)(storage);
         long len = PySequence_Size(obj_ptr); 
         if (len < 0) {
             abort();
@@ -59,7 +59,7 @@ struct VectorFromList {
         
         // fill the C++ vector from the Python list data
         for(int i = 0; i < len; i++) { 
-            v->push_back(extract<T*>(PySequence_GetItem(obj_ptr, i)));
+            v->push_back(extract<T>(PySequence_GetItem(obj_ptr, i)));
         }
 
         // stash the pointer location for boost.python
