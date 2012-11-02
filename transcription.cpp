@@ -228,7 +228,8 @@ void Transcription::setAudioData(double * audio, int numSamples)
     // deep copy the audio data from the argument to the class variable
     memcpy(m_SoundIn, audio, sizeof(double)*numSamples);
 
-    m_SampleN = m_AllocN = (size_t)numSamples;
+    m_SampleN = (size_t)numSamples;
+    m_AllocN = (size_t)numSamples;
 }
 
 Transcription::FeatureSet
@@ -265,7 +266,6 @@ Transcription::getRemainingFeatures()
 
     }
 
-    
     Transcribe(Msec,m_SampleN,m_SoundIn,hello1,hello2,OutArray,m_inputSampleRate);
     int start;
     int endd;

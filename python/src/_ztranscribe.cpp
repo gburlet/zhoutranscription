@@ -74,7 +74,7 @@ struct VectorFromList {
     }
 };
 
-void inputAudio(Transcription t, np::ndarray const & npAudio) {
+void inputAudio(Transcription &t, np::ndarray const & npAudio) {
     // check the audio array is of type np.double
     if (npAudio.get_dtype() != np::dtype::get_builtin<double>()) {
         PyErr_SetString(PyExc_TypeError, "Incorrect array data type");
@@ -90,6 +90,10 @@ void inputAudio(Transcription t, np::ndarray const & npAudio) {
     int numSamples = npAudio.shape(0);
     double * audio = reinterpret_cast<double*>(npAudio.get_data());
     t.setAudioData(audio, numSamples);
+}
+
+std::string realTimeString(RealTime &r) {
+    return r.toText();
 }
 
 BOOST_PYTHON_MODULE(transcribe)
@@ -108,6 +112,7 @@ BOOST_PYTHON_MODULE(transcribe)
     ;
     
     class_<RealTime>("RealTime", init<int,int>())
+        .def("__str__", &realTimeString)
         .def("fromSeconds", static_cast<RealTime(*)(double)>(&RealTime::fromSeconds))
         .staticmethod("fromSeconds")
         .def("fromMilliseconds", static_cast<RealTime(*)(int)>(&RealTime::fromMilliseconds))

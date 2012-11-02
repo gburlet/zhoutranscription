@@ -26,7 +26,7 @@ public:
 
     FeatureSet getRemainingFeatures();
 
-protected:
+public:
     size_t m_stepSize;
     size_t m_blockSize;
     double * m_SoundIn;
