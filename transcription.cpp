@@ -6,9 +6,8 @@
 #include "transcription.h"
 #include <math.h>
 #include <stdlib.h>
-
-// Symbolic name for visibility("default") attribute.
-//#define EXPORT __attribute__((visibility("default")))
+#include <iostream>
+#include <string.h>
 
 using std::string;
 using std::vector;
@@ -26,8 +25,6 @@ const double CDen[8] = {
 };
   
 const int A[10] = {0, 120, 190, 240, 279, 310, 337, 360, 380, 399};
-
-
 
 const double EualCurve960[960] = {
     83.750025,83.532690,83.315770,83.099260,82.883159,82.667463,82.452170,82.237276,82.022779,81.808675,
@@ -97,14 +94,14 @@ const double EualCurve960[960] = {
     12.174175,12.369392,12.565329,12.761907,12.959049,13.156679,13.354718,13.553089,13.751715,13.950518,14.149420,14.348345,14.547211,14.745925,14.944391,
     15.142512,15.340191,15.537333,15.733840,15.929615,16.124564   
 };
+
 void Transcribe(int Len,int inputLen,double *SoundIn,double *out,double *outArray2,double *outArray3,double SampleRate);
 
-//EXPORT // export symbol
 Transcription::Transcription(float inputSampleRate) :
     Plugin(inputSampleRate),
     m_stepSize(0)
 {
-    m_SoundIn=0;
+    m_SoundIn=NULL;
     m_SampleN=0;
     m_AllocN = 0;
     m_Excess = false;
@@ -112,7 +109,7 @@ Transcription::Transcription(float inputSampleRate) :
 
 Transcription::~Transcription()
 {
-    free(m_SoundIn);
+    delete [] m_SoundIn;
 }
 
 size_t
@@ -146,8 +143,8 @@ Transcription::initialise(size_t channels, size_t stepSize, size_t blockSize)
 void
 Transcription::reset()
 {
-    free(m_SoundIn);
-    m_SoundIn = 0;
+    delete [] m_SoundIn;
+    m_SoundIn = NULL;
     m_SampleN = 0;
     m_AllocN = 0;
     m_Excess = false;
@@ -216,6 +213,22 @@ Transcription::process(const float *const *inputBuffers,
     }
 
     return FeatureSet();
+}
+
+void Transcription::setAudioData(double * audio, int numSamples)
+{
+    // if audio has previously been assigned, free it and reallocate
+    if (m_SoundIn) {
+        delete [] m_SoundIn;
+        m_SoundIn = NULL;
+    }
+
+    // dynamically allocate the audio array
+    m_SoundIn = new double[numSamples];
+    // deep copy the audio data from the argument to the class variable
+    memcpy(m_SoundIn, audio, sizeof(double)*numSamples);
+
+    m_SampleN = m_AllocN = (size_t)numSamples;
 }
 
 Transcription::FeatureSet

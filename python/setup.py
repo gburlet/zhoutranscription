@@ -4,7 +4,7 @@ from setuptools import setup, Extension
 
 if sys.platform == "darwin":
     link_args = []
-    libraries = ["boost_python-mt", "ztranscribe"]
+    libraries = ["boost_python-mt", "ztranscribe", "boost_numpy"]
     library_dirs = ["/usr/local/lib"]
     include_dirs = [".."]
     runtime_library_dirs = ["/usr/local/lib"]

@@ -1,5 +1,5 @@
 #ifndef _TRANSCRIPTION_PLUGIN_H_
-#define _TRSNSCRIPTION_PLUGIN_H_
+#define _TRANSCRIPTION_PLUGIN_H_
 
 #include "plugin.h"
 
@@ -21,6 +21,8 @@ public:
 
     FeatureSet process(const float *const *inputBuffers,
                        Vamp::RealTime timestamp);
+
+    void setAudioData(double * audio, int numSamples);
 
     FeatureSet getRemainingFeatures();
 

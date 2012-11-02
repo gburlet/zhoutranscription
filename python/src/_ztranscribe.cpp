@@ -4,11 +4,15 @@
 #include <boost/python.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <boost/python/suite/indexing/map_indexing_suite.hpp>
+#include <boost/numpy.hpp>
+
+#include <iostream>
 
 using Vamp::RealTime;
-
-using namespace boost::python;
 using namespace std;
+
+namespace py = boost::python;
+namespace np = boost::numpy;
 
 typedef vector<float> fVector;
 typedef vector<Transcription::Feature> FeatureList;
@@ -34,7 +38,7 @@ string fVec_print(fVector x) {
 template<typename T>
 struct VectorFromList {
     VectorFromList() { 
-        converter::registry::push_back(&convertible, &construct, type_id<vector<T> >()); 
+        py::converter::registry::push_back(&convertible, &construct, py::type_id<vector<T> >()); 
     }
 
     static void* convertible(PyObject* obj_ptr){
@@ -46,9 +50,9 @@ struct VectorFromList {
         }
     }
 
-    static void construct(PyObject* obj_ptr, converter::rvalue_from_python_stage1_data* data){
+    static void construct(PyObject* obj_ptr, py::converter::rvalue_from_python_stage1_data* data){
         // Get pointer to memory where the vector will be constructed
-        void* storage = ((converter::rvalue_from_python_storage<std::vector<T> >*)(data))->storage.bytes;
+        void* storage = ((py::converter::rvalue_from_python_storage<std::vector<T> >*)(data))->storage.bytes;
 
         // construct the new vector in place using the python list data
         new (storage) vector<T>();
@@ -62,7 +66,7 @@ struct VectorFromList {
         
         // fill the C++ vector from the Python list data
         for(int i = 0; i < len; i++) { 
-            v->push_back(extract<T>(PySequence_GetItem(obj_ptr, i)));
+            v->push_back(py::extract<T>(PySequence_GetItem(obj_ptr, i)));
         }
 
         // stash the pointer location for boost.python
@@ -70,9 +74,32 @@ struct VectorFromList {
     }
 };
 
+void inputAudio(Transcription t, np::ndarray const & npAudio) {
+    // check the audio array is of type np.double
+    if (npAudio.get_dtype() != np::dtype::get_builtin<double>()) {
+        PyErr_SetString(PyExc_TypeError, "Incorrect array data type");
+        py::throw_error_already_set();
+    }
+    
+    // check it is a monaural signal
+    if (npAudio.get_nd() != 1) {
+        PyErr_SetString(PyExc_TypeError, "Incorrect number of dimensions. Should be (1,)");
+        py::throw_error_already_set();
+    }
+
+    int numSamples = npAudio.shape(0);
+    double * audio = reinterpret_cast<double*>(npAudio.get_data());
+    t.setAudioData(audio, numSamples);
+}
+
 BOOST_PYTHON_MODULE(transcribe)
 {
+    using namespace boost::python;
+
     VectorFromList<float>();
+
+    // initialize boost::numpy
+    np::initialize();
 
     class_<fVector>("fVec")
         .def(vector_indexing_suite<fVector>())
@@ -92,7 +119,7 @@ BOOST_PYTHON_MODULE(transcribe)
     class_<Transcription>("Transcription", init<float>())
         .def("initialise", &Transcription::initialise)
         .def("reset", &Transcription::reset)
-        .def("process", &Transcription::process)
+        .def("inputAudio", &inputAudio)
         .def("getRemainingFeatures", &Transcription::getRemainingFeatures)
     ;
 
