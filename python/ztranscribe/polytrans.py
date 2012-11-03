@@ -11,7 +11,24 @@ parser.add_argument('filein', help='input file')
 parser.add_argument('fileout', help='output file')
 parser.add_argument('-v', '--verbose', help='increase output verbosity', action='store_true')
 
+semitones = ['A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#']
+
+def gen_midi_map():
+    midi_map = {}
+    oct = 0
+    for i in range(88):
+        semitone = semitones[i % 12]
+        if semitone == 'C':
+            oct += 1
+
+        midi_map[i+21] = (semitone, oct)
+
+    return midi_map
+
 class PolyTrans:
+    
+    # map from midi number to note (pitch name and octave)
+    midi_map = gen_midi_map()
 
     def __init__(self, guitar=True, step_size=441, hop_size=441):
         self._guitar = guitar
@@ -34,10 +51,41 @@ class PolyTrans:
 
         t.inputAudio(x)
         features = t.getRemainingFeatures()[0]
+        # access attributes of a note event (feature) in features by
+        # ts: f.timestamp
+        # duration: f.duration
+        # MIDI notes: f.values
 
-        return features
+        # combine features with the same timestamps
+        note_events = []
+        for f in features:
+            ts = f.timestamp.toSeconds()
+            note_num = int(f.values[0])
+            # if the last timestamp is equal to this timestamp, combine into a chord
+            if len(note_events) > 0 and note_events[-1][0] == ts:
+                note_events[-1][1].append(note_num)
+            else:
+                note_events.append([ts, [note_num]])
 
-    def write_mei(self, features, output_path=None):
+        if self._guitar:
+            self._guitarify(note_events)
+
+        print note_events
+
+        return note_events
+
+    def _guitarify(self, note_events):
+        for i in range(len(note_events)-1,-1,-1):
+            # filter pitches outside of the guitar range (standard tuning)
+            # TODO: make this dynamic according to the guitar tuning
+            pruned_notes = filter(lambda n: n>= 40 and n <= 88, note_events[i][1])
+            if len(pruned_notes) > 0:
+                # update notes with the pruned notes for the guitar
+                note_events[i][1] = pruned_notes
+            else:
+                del note_events[i]
+
+    def write_mei(self, note_events, output_path=None):
         # begin constructing mei document
         meidoc = MeiDocument()
         mei = MeiElement('mei')
@@ -84,16 +132,54 @@ class PolyTrans:
         section.addChild(score_def)
         
         # start writing pitches to file
-        for f in features:
-            print "ts: ", f.timestamp
-            print "duration: ", f.duration
-            print "MIDI: ", f.values
+        note_container = None
+        for i, note_event in enumerate(note_events):
+            if i % meter_count == 0:
+                measure = MeiElement('measure')
+                measure.addAttribute('n', str(int(i/meter_count + 1)))
+                staff = MeiElement('staff')
+                staff.addAttribute('n', '1')
+                layer = MeiElement('layer')
+                layer.addAttribute('n', '1')
+                section.addChild(measure)
+                measure.addChild(staff)
+                staff.addChild(layer)
+                note_container = layer
 
-        if self._guitar:
-            self._guitarify(meidoc)
+            notes = note_event[1]
+            if len(notes) > 1:
+                chord = MeiElement('chord')
+                for n in notes:
+                    note = MeiElement('note')
+                    note_info = PolyTrans.midi_map[n]
+                    pname = note_info[0]
+                    oct = note_info[1]
+                    note.addAttribute('pname', pname[0])
+                    note.addAttribute('oct', str(oct))
+                    if len(pname) > 1 and pname[-1] == '#':
+                        # there is an accidental
+                        note.addAttribute('accid.ges', 's')
+                    note.addAttribute('dur', str(meter_unit))
+                    chord.addChild(note)
+                note_container.addChild(chord)
+            else:
+                n = notes[0]
+                note = MeiElement('note')
+                note_info = PolyTrans.midi_map[n]
+                pname = note_info[0]
+                oct = note_info[1]
+                note.addAttribute('pname', pname[0])
+                note.addAttribute('oct', str(oct))
+                if len(pname) > 1 and pname[-1] == '#':
+                    # there is an accidental
+                    note.addAttribute('accid.ges', 's')
+                note.addAttribute('dur', str(meter_unit))
+                note_container.addChild(note)
 
-    def _guitarify(self, meidoc):
-        pass
+        if output_path is not None:
+            XmlExport.meiDocumentToFile(meidoc, output_path)
+        else:
+            return XmlExport.meiDocumentToText(meidoc)
 
 if __name__ == '__main__':
     # parse command line arguments
@@ -114,5 +200,5 @@ if __name__ == '__main__':
         raise ValueError('Ouput path must have the file extension .mei')
 
     t = PolyTrans(guitar=True)
-    features = t.transcribe(input_path)
-    t.write_mei(features, output_path)
+    note_events = t.transcribe(input_path)
+    t.write_mei(note_events, output_path)
