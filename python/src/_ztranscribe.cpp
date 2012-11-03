@@ -117,6 +117,8 @@ BOOST_PYTHON_MODULE(transcribe)
         .staticmethod("fromSeconds")
         .def("fromMilliseconds", static_cast<RealTime(*)(int)>(&RealTime::fromMilliseconds))
         .staticmethod("fromMilliseconds")
+        .def("toString", &RealTime::toString)
+        .def("toSeconds", &RealTime::toSeconds)
         .def_readwrite("sec", &RealTime::sec)
         .def_readwrite("nsec", &RealTime::nsec)
     ;

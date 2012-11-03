@@ -93,6 +93,11 @@ RealTime::fromSeconds(double sec)
     return RealTime(int(sec), int((sec - int(sec)) * ONE_BILLION + 0.5));
 }
 
+double RealTime::toSeconds()
+{
+    return double(sec) + double(nsec)/ONE_BILLION;
+}
+
 RealTime
 RealTime::fromMilliseconds(int msec)
 {

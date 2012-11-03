@@ -77,6 +77,8 @@ struct RealTime
     static RealTime fromSeconds(double sec);
     static RealTime fromMilliseconds(int msec);
 
+    double toSeconds();
+
 #ifndef _WIN32
     static RealTime fromTimeval(const struct timeval &);
 #endif
