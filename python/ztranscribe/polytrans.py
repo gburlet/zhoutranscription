@@ -90,8 +90,6 @@ class PolyTrans:
         meidoc = MeiDocument()
         mei = MeiElement('mei')
         meidoc.setRootElement(mei)
-        mei_head = MeiElement('meiHead')
-        mei.addChild(mei_head)
 
         music = MeiElement('music')
         body = MeiElement('body')
