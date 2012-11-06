@@ -1,8 +1,10 @@
 import os
 import argparse
 import numpy as np
+
 from scikits.audiolab import wavread
 from ztranscribe.transcribe import Transcription, FeatureList, Feature, RealTime
+from darwintab.guitar.guitar import Guitar
 from pymei import MeiDocument, MeiElement, XmlExport
 
 # set up command line argument structure
@@ -14,6 +16,10 @@ parser.add_argument('-v', '--verbose', help='increase output verbosity', action=
 semitones = ['A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#']
 
 def gen_midi_map():
+    '''
+    Generate a MIDI map for all keys on a piano
+    '''
+
     midi_map = {}
     oct = 0
     for i in range(88):
@@ -30,8 +36,7 @@ class PolyTrans:
     # map from midi number to note (pitch name and octave)
     midi_map = gen_midi_map()
 
-    def __init__(self, guitar=True, step_size=441, hop_size=441):
-        self._guitar = guitar
+    def __init__(self, step_size=441, hop_size=441):
         self._step_size = step_size
         self._hop_size = hop_size
 
@@ -67,18 +72,23 @@ class PolyTrans:
             else:
                 note_events.append([ts, [note_num]])
 
-        if self._guitar:
-            self._guitarify(note_events)
-
-        print note_events
-
         return note_events
 
-    def _guitarify(self, note_events):
+    def guitarify(self, note_events, num_frets, tuning, capo):
+        '''
+        Filter pitches outside of the guitar range based on the 
+        number of frets on the guitar, the tuning, and the capo position.
+        This function does not return anything since the note events are 
+        passed in by reference, not by value, and modifies the note events
+        in the exterior scope.
+        '''
+
+        # create a guitar model
+        g = Guitar(num_frets, tuning, capo)
+        lb_pitch, ub_pitch = g.get_pitch_range()
+
         for i in range(len(note_events)-1,-1,-1):
-            # filter pitches outside of the guitar range (standard tuning)
-            # TODO: make this dynamic according to the guitar tuning
-            pruned_notes = filter(lambda n: n>= 40 and n <= 88, note_events[i][1])
+            pruned_notes = filter(lambda n: n >= lb_pitch.toMidi() and n <= ub_pitch.toMidi(), note_events[i][1])
             if len(pruned_notes) > 0:
                 # update notes with the pruned notes for the guitar
                 note_events[i][1] = pruned_notes
@@ -197,6 +207,7 @@ if __name__ == '__main__':
     if output_ext != '.mei':
         raise ValueError('Ouput path must have the file extension .mei')
 
-    t = PolyTrans(guitar=True)
+    t = PolyTrans()
     note_events = t.transcribe(input_path)
+    t.guitarify(note_events, 24, 'standard', 0)
     t.write_mei(note_events, output_path)
