@@ -64,7 +64,7 @@ class PolyTrans:
         # combine features with the same timestamps
         note_events = []
         for f in features:
-            ts = f.timestamp.toSeconds()
+            ts = f.timestamp.toString()[1:-7] # only take 2 decimal points, skip space at beginning
             note_num = int(f.values[0])
             # if the last timestamp is equal to this timestamp, combine into a chord
             if len(note_events) > 0 and note_events[-1][0] == ts:
@@ -95,13 +95,15 @@ class PolyTrans:
             else:
                 del note_events[i]
 
-    def write_mei(self, note_events, output_path=None):
+    def write_mei(self, note_events, audio_path, output_path=None):
         # begin constructing mei document
         meidoc = MeiDocument()
         mei = MeiElement('mei')
         meidoc.setRootElement(mei)
 
         music = MeiElement('music')
+        timeline = MeiElement('timeline')
+        timeline.addAttribute('avref', str(audio_path))
         body = MeiElement('body')
         mdiv = MeiElement('mdiv')
         score = MeiElement('score')
@@ -124,6 +126,7 @@ class PolyTrans:
         instr_def.addAttribute('midi.instrnum', '28')
 
         mei.addChild(music)
+        music.addChild(timeline)
         music.addChild(body)
         body.addChild(mdiv)
         mdiv.addChild(score)
@@ -154,9 +157,17 @@ class PolyTrans:
                 staff.addChild(layer)
                 note_container = layer
 
+            ts = note_event[0]
+            when = MeiElement('when')
+            if i == 0:
+                timeline.addAttribute('origin', when.getId())
+            when.addAttribute('absolute', ts)
+            timeline.addChild(when)
+
             notes = note_event[1]
             if len(notes) > 1:
                 chord = MeiElement('chord')
+                chord.addAttribute('when', when.getId())
                 for n in notes:
                     note = MeiElement('note')
                     note_info = PolyTrans.midi_map[n]
@@ -173,6 +184,7 @@ class PolyTrans:
             else:
                 n = notes[0]
                 note = MeiElement('note')
+                note.addAttribute('when', when.getId())
                 note_info = PolyTrans.midi_map[n]
                 pname = note_info[0]
                 oct = note_info[1]
@@ -209,5 +221,5 @@ if __name__ == '__main__':
 
     t = PolyTrans()
     note_events = t.transcribe(input_path)
-    t.guitarify(note_events, 24, 'standard', 0)
-    t.write_mei(note_events, output_path)
+    #t.guitarify(note_events, 24, 'standard', 0)
+    t.write_mei(note_events, input_path, output_path)
