@@ -64,7 +64,7 @@ class PolyTrans:
         # combine features with the same timestamps
         note_events = []
         for f in features:
-            ts = f.timestamp.toString()[1:-7] # only take 2 decimal points, skip space at beginning
+            ts = float(f.timestamp.toString()[1:-7]) # only take 2 decimal points, skip space at beginning
             note_num = int(f.values[0])
             # if the last timestamp is equal to this timestamp, combine into a chord
             if len(note_events) > 0 and note_events[-1][0] == ts:
@@ -72,7 +72,8 @@ class PolyTrans:
             else:
                 note_events.append([ts, [note_num]])
 
-        return note_events
+        # sort by timestamp in ascending order
+        return sorted(note_events, key=lambda n: n[0])
 
     def guitarify(self, note_events, num_frets, tuning, capo):
         '''
@@ -161,7 +162,7 @@ class PolyTrans:
             when = MeiElement('when')
             if i == 0:
                 timeline.addAttribute('origin', when.getId())
-            when.addAttribute('absolute', ts)
+            when.addAttribute('absolute', str(ts))
             timeline.addChild(when)
 
             notes = note_event[1]
