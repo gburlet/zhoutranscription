@@ -4,7 +4,6 @@ import numpy as np
 
 from scikits.audiolab import wavread
 from ztranscribe.transcribe import Transcription, FeatureList, Feature, RealTime
-from darwintab.guitar.guitar import Guitar
 from pymei import MeiDocument, MeiElement, XmlExport
 
 # set up command line argument structure
@@ -65,7 +64,7 @@ class PolyTrans:
         note_events = []
         for f in features:
             ts = float(f.timestamp.toString()[1:-7]) # only take 2 decimal points, skip space at beginning
-            note_num = int(f.values[0])
+            note_num = int(f.values[0]) + 1          # it looks like everything is transposed a semitone down ... transposing up
             # if the last timestamp is equal to this timestamp, combine into a chord
             if len(note_events) > 0 and note_events[-1][0] == ts:
                 note_events[-1][1].append(note_num)
@@ -75,6 +74,9 @@ class PolyTrans:
         # sort by timestamp in ascending order
         return sorted(note_events, key=lambda n: n[0])
 
+    '''
+    deprecated function: implemented in Robotaba now
+    requires guitar model import
     def guitarify(self, note_events, num_frets, tuning, capo):
         '''
         Filter pitches outside of the guitar range based on the 
@@ -95,6 +97,7 @@ class PolyTrans:
                 note_events[i][1] = pruned_notes
             else:
                 del note_events[i]
+    '''
 
     def write_mei(self, note_events, audio_path, output_path=None):
         # begin constructing mei document
