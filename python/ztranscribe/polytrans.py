@@ -74,31 +74,6 @@ class PolyTrans:
         # sort by timestamp in ascending order
         return sorted(note_events, key=lambda n: n[0])
 
-    '''
-    deprecated function: implemented in Robotaba now
-    requires guitar model import
-    def guitarify(self, note_events, num_frets, tuning, capo):
-        '''
-        Filter pitches outside of the guitar range based on the 
-        number of frets on the guitar, the tuning, and the capo position.
-        This function does not return anything since the note events are 
-        passed in by reference, not by value, and modifies the note events
-        in the exterior scope.
-        '''
-
-        # create a guitar model
-        g = Guitar(num_frets, tuning, capo)
-        lb_pitch, ub_pitch = g.get_pitch_range()
-
-        for i in range(len(note_events)-1,-1,-1):
-            pruned_notes = filter(lambda n: n >= lb_pitch.toMidi() and n <= ub_pitch.toMidi(), note_events[i][1])
-            if len(pruned_notes) > 0:
-                # update notes with the pruned notes for the guitar
-                note_events[i][1] = pruned_notes
-            else:
-                del note_events[i]
-    '''
-
     def write_mei(self, note_events, audio_path, output_path=None):
         # begin constructing mei document
         meidoc = MeiDocument()
@@ -225,5 +200,4 @@ if __name__ == '__main__':
 
     t = PolyTrans()
     note_events = t.transcribe(input_path)
-    #t.guitarify(note_events, 24, 'standard', 0)
     t.write_mei(note_events, input_path, output_path)
