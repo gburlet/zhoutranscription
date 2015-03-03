@@ -4,7 +4,6 @@ import numpy as np
 
 from scikits.audiolab import wavread
 from ztranscribe.transcribe import Transcription, FeatureList, Feature, RealTime
-from pymei import MeiDocument, MeiElement, XmlExport
 
 # set up command line argument structure
 parser = argparse.ArgumentParser(description='Estimate the pitches in an audio file.')
@@ -60,11 +59,32 @@ class PolyTrans:
         # duration: f.duration
         # MIDI notes: f.values
 
+        return features
+
+    def write_midi(self, notes, output_path):
+        from midiio import MidiIO 
+
+        note_events = []
+        for n in notes:
+            event = {
+                "pitch": int(n.values[0])+1,        # everything is transposed a semitone down, who knows why
+                "onset_s": float(n.timestamp.toSeconds()),
+                "offset_s": float(n.timestamp.toSeconds()) + float(n.duration.toSeconds())
+            }
+            note_events.append(event)
+        song_notes = sorted(note_events, key=lambda x: x['onset_s'])
+
+        m = MidiIO(output_path)
+        m.write_midi(song_notes, time_offset=0.025)
+
+    def write_mei(self, notes, audio_path, output_path=None):
+        from pymei import MeiDocument, MeiElement, XmlExport
+        
         # combine features with the same timestamps
         note_events = []
-        for f in features:
-            ts = float(f.timestamp.toString()[1:-7]) # only take 2 decimal points, skip space at beginning
-            note_num = int(f.values[0]) + 1          # it looks like everything is transposed a semitone down ... transposing up
+        for n in notes:
+            ts = n.timestamp.toSeconds()
+            note_num = int(n.values[0]) + 1          # it looks like everything is transposed a semitone down ... transposing up
             # if the last timestamp is equal to this timestamp, combine into a chord
             if len(note_events) > 0 and note_events[-1][0] == ts:
                 note_events[-1][1].append(note_num)
@@ -72,9 +92,8 @@ class PolyTrans:
                 note_events.append([ts, [note_num]])
 
         # sort by timestamp in ascending order
-        return sorted(note_events, key=lambda n: n[0])
+        note_events = sorted(note_events, key=lambda n: n[0])
 
-    def write_mei(self, note_events, audio_path, output_path=None):
         # begin constructing mei document
         meidoc = MeiDocument()
         mei = MeiElement('mei')
@@ -195,9 +214,10 @@ if __name__ == '__main__':
     if input_ext != '.wav':
         raise ValueError('Input path must be a wav file')
     _, output_ext = os.path.splitext(output_path)
-    if output_ext != '.mei':
-        raise ValueError('Ouput path must have the file extension .mei')
+    if output_ext != '.mei' and output_ext != '.mid':
+        raise ValueError('Ouput path must have the file extension .mei or .mid')
 
     t = PolyTrans()
     note_events = t.transcribe(input_path)
-    t.write_mei(note_events, input_path, output_path)
+    t.write_midi(note_events, output_path)
+    #t.write_mei(note_events, input_path, output_path)
