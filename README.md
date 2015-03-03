@@ -19,8 +19,9 @@ The boost/numpy dynamic library will be installed to `/usr/local/lib`
 * scikits.audiolab
 
 Now compile the dynamic library with the polyphonic transcription code:
+
+If on OS X, `make dylib`. If on Ubuntu, `make shared`. Then:
 ```
-make dylib
 cd python
 python setup.py build
 sudo python setup.py install

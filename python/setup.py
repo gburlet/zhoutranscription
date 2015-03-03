@@ -1,11 +1,21 @@
 import os
 import sys
 from setuptools import setup, Extension
+import platform
 
 if sys.platform == "darwin":
     link_args = []
     libraries = ["boost_python-mt", "ztranscribe", "boost_numpy"]
     library_dirs = ["/usr/local/lib"]
+    include_dirs = [".."]
+    runtime_library_dirs = ["/usr/local/lib"]
+elif sys.platform == "linux2" and platform.linux_distribution()[0] == "Ubuntu":
+    ver = platform.python_version_tuple()
+    link_args = []
+    libraries = ["boost_python-py{0}{1}".format(ver[0],ver[1]),
+                 "ztranscribe", 
+                 "boost_numpy"]
+    library_dirs = ["/usr/local/lib", "/usr/lib/x86_64-linux-gnu"]
     include_dirs = [".."]
     runtime_library_dirs = ["/usr/local/lib"]
 
