@@ -3,7 +3,7 @@ import os
 from pretty_midi import PrettyMIDI, Instrument
 from pretty_midi import Note as MidiNote
 
-from frettableserver.resources.score.scoreevent import Note
+from scoreevent import Note
 
 
 class MidiIO(object):
